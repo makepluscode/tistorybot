@@ -29,7 +29,7 @@ class TistoryLogin:
     def login(self):
         if not self.username or not self.password:
             self.logger.error("TISTORY_USERNAME과 TISTORY_PASSWORD를 .env 파일에 설정해주세요.")
-            return
+            return None
 
         try:
             self.setup_driver()
@@ -44,8 +44,9 @@ class TistoryLogin:
             self.logger.info("로그인 성공!")
         except Exception as e:
             self.logger.error(f"로그인 중 오류 발생: {e}")
+            return None
         finally:
-            self.cleanup()
+            return self.driver
 
     def click_kakao_login(self):
         login_button = WebDriverWait(self.driver, 30).until(
@@ -75,9 +76,14 @@ class TistoryLogin:
         self.logger.info("로그인 버튼 클릭 완료")
 
     def verify_login(self):
-        WebDriverWait(self.driver, 30).until(
-            EC.presence_of_element_located((By.CSS_SELECTOR, '.gnb_icon.gnb_my'))
-        )
+        try:
+            WebDriverWait(self.driver, 30).until(
+                EC.presence_of_element_located((By.CSS_SELECTOR, 'a.link_profile'))
+            )
+            self.logger.info("로그인 성공: 프로필 링크가 발견되었습니다.")
+        except TimeoutException:
+            self.logger.error("로그인 실패: 프로필 링크를 찾을 수 없습니다.")
+            raise
 
     def cleanup(self):
         if self.driver:
